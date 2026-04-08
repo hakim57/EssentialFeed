@@ -52,13 +52,16 @@ final class RemoteFeedLoaderTests: XCTestCase {
     func test_loadDeliversErrorOnNon200HttpResponse() {
         let url = URL(string: "http://a-given-url.com")!
         let (sut, client) = makeSUT(url: url)
+        let samples = [199, 201, 300, 400, 500]
         
-        var capturedErrors = [RemoteFeedLoader.Error]()
-        sut.load { capturedErrors.append($0) }
-        
-        client.complete(withStatusCode: 400)
-        
-        XCTAssertEqual(capturedErrors, [.invalidData])
+        samples.enumerated().forEach { index, code in
+            var capturedErrors = [RemoteFeedLoader.Error]()
+            sut.load { capturedErrors.append($0) }
+            
+            client.complete(withStatusCode: code, at: index)
+            
+            XCTAssertEqual(capturedErrors, [.invalidData])
+        }
     }
     
     // MARK: - Helpers
@@ -92,8 +95,6 @@ final class RemoteFeedLoaderTests: XCTestCase {
                 headerFields: nil
             )
             messages[index].completion(nil, response)
-            
-            
         }
     }
 }
