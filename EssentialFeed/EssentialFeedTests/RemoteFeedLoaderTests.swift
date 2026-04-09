@@ -39,14 +39,10 @@ final class RemoteFeedLoaderTests: XCTestCase {
         let url = URL(string: "http://a-given-url.com")!
         let (sut, client) = makeSUT(url: url)
         
-        var capturedErrors = [RemoteFeedLoader.Error]()
-        sut.load { capturedErrors.append($0) }
-        
-        let clientError = NSError(domain: "Test", code: 0)
-        client.complete(with: clientError)
-        
-        
-        XCTAssertEqual(capturedErrors, [.connectivity])
+        expect(sut, toCompleteWithError: .connectivity) {
+            let clientError = NSError(domain: "Test", code: 0)
+            client.complete(with: clientError)
+        }
     }
     
     func test_loadDeliversErrorOnNon200HttpResponse() {
@@ -68,13 +64,10 @@ final class RemoteFeedLoaderTests: XCTestCase {
         let url = URL(string: "http://a-given-url.com")!
         let (sut, client) = makeSUT(url: url)
         
-        var capturedErrors = [RemoteFeedLoader.Error]()
-        sut.load { capturedErrors.append($0) }
-        
-        let invalidJSON = Data("invalid json".utf8)
-        client.complete(withStatusCode: 200, data: invalidJSON)
-
-        XCTAssertEqual(capturedErrors, [.invalidData])
+        expect(sut, toCompleteWithError: .invalidData) {
+            let invalidJSON = Data("invalid json".utf8)
+            client.complete(withStatusCode: 200, data: invalidJSON)
+        }
     }
     
     // MARK: - Helpers
@@ -83,6 +76,15 @@ final class RemoteFeedLoaderTests: XCTestCase {
         let client = HTTPClientSpy()
         let sut = RemoteFeedLoader(url: url, client: client)
         return (sut, client)
+    }
+    
+    private func expect(_ sut: RemoteFeedLoader, toCompleteWithError error: RemoteFeedLoader.Error, when action: () -> Void, file: StaticString = #filePath, line: UInt = #line) {
+        var capturedErrors = [RemoteFeedLoader.Error]()
+        sut.load { capturedErrors.append($0) }
+        
+        action()
+        
+        XCTAssertEqual(capturedErrors, [error], file: file, line: line)
     }
     
     private class HTTPClientSpy: HTTPClient {
