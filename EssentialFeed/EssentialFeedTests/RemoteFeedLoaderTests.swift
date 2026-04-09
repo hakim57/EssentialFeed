@@ -36,8 +36,7 @@ final class RemoteFeedLoaderTests: XCTestCase {
     }
     
     func test_loadDeliversErrorOnClientError() {
-        let url = URL(string: "http://a-given-url.com")!
-        let (sut, client) = makeSUT(url: url)
+        let (sut, client) = makeSUT()
         
         expect(sut, toCompleteWith: .failure(.connectivity)) {
             let clientError = NSError(domain: "Test", code: 0)
@@ -46,8 +45,7 @@ final class RemoteFeedLoaderTests: XCTestCase {
     }
     
     func test_loadDeliversErrorOnNon200HttpResponse() {
-        let url = URL(string: "http://a-given-url.com")!
-        let (sut, client) = makeSUT(url: url)
+        let (sut, client) = makeSUT()
         let samples = [199, 201, 300, 400, 500]
         
         samples.enumerated().forEach { index, code in
@@ -58,8 +56,7 @@ final class RemoteFeedLoaderTests: XCTestCase {
     }
     
     func test_load_deliversErrorOn200HttpResponseWithInvalidJSON() {
-        let url = URL(string: "http://a-given-url.com")!
-        let (sut, client) = makeSUT(url: url)
+        let (sut, client) = makeSUT()
         
         expect(sut, toCompleteWith: .failure(.invalidData)) {
             let invalidJSON = Data("invalid json".utf8)
@@ -68,12 +65,48 @@ final class RemoteFeedLoaderTests: XCTestCase {
     }
     
     func test_load_deliversNoItemsOn200HttpResponseWithEmptyListJSON() {
-        let url = URL(string: "http://a-given-url.com")!
-        let (sut, client) = makeSUT(url: url)
+        let (sut, client) = makeSUT()
         
         expect(sut, toCompleteWith: .success([])) {
             let emptyListJSON = Data("{\"items\": []}".utf8)
             client.complete(withStatusCode: 200, data: emptyListJSON)
+        }
+    }
+    
+    func test_load_deliversNoItemsOn200HttpResponseWithJSONItems() {
+        let (sut, client) = makeSUT()
+        
+        let item1 = FeedItem(
+            id: UUID(),
+            description: nil,
+            location: nil,
+            imageURL: URL(string: "https://a-some-image-url")!
+        )
+        
+        let item1JSON = [
+            "id": item1.id.uuidString,
+            "image": item1.imageURL.absoluteString
+        ]
+        
+        let item2 = FeedItem(
+            id: UUID(),
+            description: "a desc",
+            location: "a location",
+            imageURL: URL(string: "https://a-some-image-url")!
+        )
+        
+        let item2JSON = [
+            "id": item2.id.uuidString,
+            "description": item2.description,
+            "location": item2.location,
+            "image": item2.imageURL.absoluteString
+        ]
+        
+        let itemsJSON = ["items" : [item1JSON, item2JSON]]
+        
+        expect(sut, toCompleteWith: .success([item1, item2])) {
+            let json = try! JSONSerialization.data(withJSONObject: itemsJSON)
+            client.complete(withStatusCode: 200, data: json)
         }
     }
     
