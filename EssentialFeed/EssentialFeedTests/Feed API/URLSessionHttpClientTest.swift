@@ -58,11 +58,9 @@ final class URLSessionHttpClientTest: XCTestCase {
         let error = NSError(domain: "any error", code: 1)
         URLProtocolStub.stub(data: nil, response: nil, error: error)
                 
-        let sut = makeSUT()
-        
         let exp = expectation(description: "wait for completion")
         
-        sut.get(from: url) {result in
+        makeSUT().get(from: url) {result in
             switch result {
             case let .failure(receivedError as NSError):
                 // Compare domain and code only — URLSession may add userInfo that makes full NSError inequality
@@ -81,8 +79,7 @@ final class URLSessionHttpClientTest: XCTestCase {
     // MARK: - Helpers
     
     private func makeSUT() -> URLSessionHttpClient {
-        let sut = URLSessionHttpClient()
-        return sut
+        return URLSessionHttpClient()
     }
     
     private class URLProtocolStub: URLProtocol {
