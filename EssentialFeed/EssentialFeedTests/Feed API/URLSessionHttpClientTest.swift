@@ -66,12 +66,45 @@ final class URLSessionHttpClientTest: XCTestCase {
         XCTAssertEqual(receivedError?.code, requestError.code)
     }
     
-    func test_getFromURL_FailsOnAllNitValues() {
+    func test_getFromURL_FailsOnAllInvalidRepresentationCases() {
         XCTAssertNotNil(resultErrorFor(data: nil, response: nil, error: nil))
+        XCTAssertNotNil(resultErrorFor(data: nil, response: nonHttpURLResponse(), error: nil))
+        XCTAssertNotNil(resultErrorFor(data: nil, response: anyHTTPURLResponse(), error: nil))
+        XCTAssertNotNil(resultErrorFor(data: anyData(), response: nil, error: nil))
+        XCTAssertNotNil(resultErrorFor(data: anyData(), response: nil, error: anyNSError()))
+        XCTAssertNotNil(resultErrorFor(data: nil, response: nonHttpURLResponse(), error: anyNSError()))
+        XCTAssertNotNil(resultErrorFor(data: nil, response: anyHTTPURLResponse(), error: anyNSError()))
+        XCTAssertNotNil(resultErrorFor(data: anyData(), response: nonHttpURLResponse(), error: anyNSError()))
+        XCTAssertNotNil(resultErrorFor(data: anyData(), response: anyHTTPURLResponse(), error: anyNSError()))
+        XCTAssertNotNil(resultErrorFor(data: anyData(), response: nonHttpURLResponse(), error: nil))
+    }
+    
+    // MARK: - Helpers
+    
+    private func anyURL() -> URL {
+        return URL(string: "http://some-url.com")!
+    }
+    
+    private func anyData() -> Data {
+        return Data("any data".utf8)
+    }
+    
+    private func nonHttpURLResponse() -> URLResponse {
+        return URLResponse(url: anyURL(), mimeType: nil, expectedContentLength: 0, textEncodingName: nil)
+    }
+    
+    private func anyHTTPURLResponse() -> HTTPURLResponse {
+        return HTTPURLResponse(url: anyURL(), statusCode: 200, httpVersion: nil, headerFields: nil)!
+    }
+    
+    private func anyNSError() -> NSError {
+        return NSError(domain: "any domain", code: 0)
     }
     
     
-    // MARK: - Helpers
+    
+    
+    
     
     private func resultErrorFor(data: Data?, response: URLResponse?, error: Error?, file: StaticString = #filePath, line: UInt = #line) -> Error? {
         
@@ -101,10 +134,6 @@ final class URLSessionHttpClientTest: XCTestCase {
         let sut = URLSessionHttpClient()
         trackForMemoryLeaks(instance: sut, file: file, line: line)
         return sut
-    }
-    
-    private func anyURL() -> URL {
-        return URL(string: "http://some-url.com")!
     }
     
     private class URLProtocolStub: URLProtocol {
